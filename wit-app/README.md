@@ -1,6 +1,8 @@
 # wit_app
 
-A new Flutter project.
+Note: the model must be downloaded separately frome here: https://waikatouniversitynz-my.sharepoint.com/:u:/g/personal/paul_schlumbom_waikato_ac_nz/EaateyfYfIlHvpd3Bmngb4cBcs6aP6ZETvdQimpJniD5GQ
+
+And then placed into `assets/models`
 
 ## Getting Started
 
