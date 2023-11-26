@@ -1,0 +1,8 @@
+workflows:
+  publishing-workflow:
+    name: standard publishing workflow
+    environment:
+      flutter: 3.13.7
+      xcode: latest
+      cocoapods: 1.11.2
+      java: 19
