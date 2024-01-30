@@ -1,4 +1,4 @@
-# aotearoa-species-classifier
+# Aotearoa Species Classifier
 Aotearoa species classifier and the corresponding apps:
 * [what-is-this.cms.waikato.ac.nz](https://what-is-this.cms.waikato.ac.nz/)
 * [Google Play](https://play.google.com/store/apps/details?id=com.waikatolink.wit_app)
