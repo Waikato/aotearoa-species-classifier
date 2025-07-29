@@ -29,7 +29,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion flutter.compileSdkVersion
+    compileSdkVersion 35 //flutter.compileSdkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -37,12 +37,11 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "nz.ac.waikato.cms.ml.wit_app"
         minSdkVersion 22
-        targetSdkVersion 34 //flutter.targetSdkVersion
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        targetSdkVersion 35 //flutter.targetSdkVersion
+        versionCode 11 //flutterVersionCode.toInteger()
+        versionName 'TargetSdkVersion35' //flutterVersionName
     }
 
     signingConfigs {
