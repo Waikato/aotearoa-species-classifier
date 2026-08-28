@@ -5,3 +5,5 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+# ONNX Runtime uses JNI and reflection.
+-keep class ai.onnxruntime.** { *; }

@@ -1,5 +1,6 @@
 plugins {
     id "com.android.application"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -29,7 +30,8 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 35 //flutter.compileSdkVersion
+    compileSdkVersion 36 //flutter.compileSdkVersion
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -38,10 +40,10 @@ android {
 
     defaultConfig {
         applicationId "nz.ac.waikato.cms.ml.wit_app"
-        minSdkVersion 22
-        targetSdkVersion 35 //flutter.targetSdkVersion
-        versionCode 11 //flutterVersionCode.toInteger()
-        versionName 'TargetSdkVersion35' //flutterVersionName
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion 36 //flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
     }
 
     signingConfigs {

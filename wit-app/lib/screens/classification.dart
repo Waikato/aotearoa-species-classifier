@@ -44,7 +44,7 @@ class _Classification extends State<Classification>{
 
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
-      return "Unknown";
+      return "Confidence too low";
     }
     String returnText = classificationResult.prediction;
     List<String> engNames = classificationResult.topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.engNames;
@@ -373,7 +373,7 @@ class _Classification extends State<Classification>{
     return ListTile(
       leading: Text(numberString),
       title: SelectableText(classificationResult.topFivePredictions[index].species),
-      trailing: Text((classificationResult.topFivePredictions[index].probability).toStringAsPrecision(3)),
+      trailing: Text("${(classificationResult.topFivePredictions[index].probability*100).toStringAsPrecision(3)}%"),
       textColor: const Color(0xFFeff6e0).withOpacity(classificationResult.topFivePredictions[index].probability / 4 + 0.75),
     );
   }
@@ -552,7 +552,7 @@ class _Classification extends State<Classification>{
   Widget build(BuildContext context){
     return Scaffold(
         appBar: AppBar(
-          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
+          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Confidence too low: try again!"),
         ),
         body: SingleChildScrollView(
             child: ListView(
@@ -592,7 +592,7 @@ class _Classification extends State<Classification>{
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            "Prediction probability: ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}",
+                            "Confidence: ${(classificationResult.topFivePredictions[0].probability*100).toStringAsPrecision(3)}%",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16.0,

@@ -379,11 +379,6 @@ class OnnxSpeciesModel {
     _session = session;
     _inputName = session.inputNames.first;
     _outputName = session.outputNames.first;
-    debugPrint("Loading model: $assetPath");
-    debugPrint("Configured width=$width height=$height");
-    debugPrint('ONNX species model loaded');
-    debugPrint('Input names: ${session.inputNames}');
-    debugPrint('Output names: ${session.outputNames}');
   }
 
   /// Runs image classification and returns the raw model logits.

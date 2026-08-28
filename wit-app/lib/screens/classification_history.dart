@@ -120,13 +120,13 @@ class _ClassificationHistory extends State<ClassificationHistory> {
 
   Text getTitleName(ClassificationResult result){
     if (result.topFivePredictions[0].probability < PROB_THRESHOLD){
-      return Text("Unknown (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+      return Text("Confidence too low (${((result.topFivePredictions[0].probability*100).toStringAsPrecision(3))}%)");
     }
     if (result.topFivePredictions[0].nameData.engNames.isEmpty 
         || result.topFivePredictions[0].nameData.engNames[0] == "") {
-      return Text("${result.prediction} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+      return Text("${result.prediction} (${((result.topFivePredictions[0].probability*100).toStringAsPrecision(3))}%)");
     }
-    return Text("${result.topFivePredictions[0].nameData.engNames[0]} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+    return Text("${result.topFivePredictions[0].nameData.engNames[0]} (${((result.topFivePredictions[0].probability*100).toStringAsPrecision(3))}%)");
   }
 
 /*if (await iosTmpFile2.exists()){
