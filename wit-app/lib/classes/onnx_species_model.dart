@@ -40,12 +40,10 @@ img.Image resizeAndCenterCropTorchvisionStyle(
 
   if (source.width <= source.height) {
     resizedWidth = resizeSize;
-    resizedHeight =
-        (resizeSize * source.height / source.width).floor();
+    resizedHeight = (resizeSize * source.height / source.width).floor();
   } else {
     resizedHeight = resizeSize;
-    resizedWidth =
-        (resizeSize * source.width / source.height).floor();
+    resizedWidth = (resizeSize * source.width / source.height).floor();
   }
 
   final resized = resizeBilinearAntialiased(
@@ -101,8 +99,7 @@ img.Image resizeBilinearAntialiased(
     throw ArgumentError('Destination dimensions must be positive.');
   }
 
-  if (source.width == destinationWidth &&
-      source.height == destinationHeight) {
+  if (source.width == destinationWidth && source.height == destinationHeight) {
     return img.Image.from(source);
   }
 
@@ -116,30 +113,32 @@ img.Image resizeBilinearAntialiased(
     destinationSize: destinationHeight,
   );
 
+  const channelCount = 3;
+
   /*
    * Horizontal intermediate buffer.
    *
    * Layout:
-   *   ((y * destinationWidth + x) * 4) + channel
+   *   ((y * destinationWidth + x) * channelCount) + channel
    *
    * Values remain floating point until the vertical pass, avoiding
    * quantisation between the two separable filtering stages.
    */
-  final intermediate = Float64List(
-    source.height * destinationWidth * 4,
+  final intermediate = Float32List(
+    source.height * destinationWidth * channelCount,
   );
 
   for (var sourceY = 0; sourceY < source.height; sourceY++) {
-    for (var destinationX = 0;
-        destinationX < destinationWidth;
-        destinationX++) {
-      final contribution =
-          horizontalContributions[destinationX];
+    for (
+      var destinationX = 0;
+      destinationX < destinationWidth;
+      destinationX++
+    ) {
+      final contribution = horizontalContributions[destinationX];
 
       var red = 0.0;
       var green = 0.0;
       var blue = 0.0;
-      var alpha = 0.0;
 
       for (var i = 0; i < contribution.indices.length; i++) {
         final sourceX = contribution.indices[i];
@@ -149,59 +148,52 @@ img.Image resizeBilinearAntialiased(
         red += pixel.r.toDouble() * weight;
         green += pixel.g.toDouble() * weight;
         blue += pixel.b.toDouble() * weight;
-        alpha += pixel.a.toDouble() * weight;
       }
 
-      final offset =
-          (sourceY * destinationWidth + destinationX) * 4;
+      final offset = (sourceY * destinationWidth + destinationX) * channelCount;
 
       intermediate[offset] = red;
       intermediate[offset + 1] = green;
       intermediate[offset + 2] = blue;
-      intermediate[offset + 3] = alpha;
     }
   }
 
   final destination = img.Image(
     width: destinationWidth,
     height: destinationHeight,
-    numChannels: 4,
+    numChannels: channelCount,
   );
 
-  for (var destinationY = 0;
-      destinationY < destinationHeight;
-      destinationY++) {
-    final contribution =
-        verticalContributions[destinationY];
+  for (var destinationY = 0; destinationY < destinationHeight; destinationY++) {
+    final contribution = verticalContributions[destinationY];
 
-    for (var destinationX = 0;
-        destinationX < destinationWidth;
-        destinationX++) {
+    for (
+      var destinationX = 0;
+      destinationX < destinationWidth;
+      destinationX++
+    ) {
       var red = 0.0;
       var green = 0.0;
       var blue = 0.0;
-      var alpha = 0.0;
 
       for (var i = 0; i < contribution.indices.length; i++) {
         final sourceY = contribution.indices[i];
         final weight = contribution.weights[i];
 
         final offset =
-            (sourceY * destinationWidth + destinationX) * 4;
+            (sourceY * destinationWidth + destinationX) * channelCount;
 
         red += intermediate[offset] * weight;
         green += intermediate[offset + 1] * weight;
         blue += intermediate[offset + 2] * weight;
-        alpha += intermediate[offset + 3] * weight;
       }
 
-      destination.setPixelRgba(
+      destination.setPixelRgb(
         destinationX,
         destinationY,
         _toUint8(red),
         _toUint8(green),
         _toUint8(blue),
-        _toUint8(alpha),
       );
     }
   }
@@ -236,33 +228,31 @@ List<_Contributions> _makeContributions({
 
   final result = <_Contributions>[];
 
-  for (var destinationIndex = 0;
-      destinationIndex < destinationSize;
-      destinationIndex++) {
+  for (
+    var destinationIndex = 0;
+    destinationIndex < destinationSize;
+    destinationIndex++
+  ) {
     /*
      * Half-pixel/pixel-centre coordinate mapping:
      *
      * sourceCentre =
      *     (destinationIndex + 0.5) / scale - 0.5
      */
-    final sourceCentre =
-        (destinationIndex + 0.5) / scale - 0.5;
+    final sourceCentre = (destinationIndex + 0.5) / scale - 0.5;
 
     final first = (sourceCentre - support).floor();
     final last = (sourceCentre + support).ceil();
 
     final combined = <int, double>{};
 
-    for (var sourceIndex = first;
-        sourceIndex <= last;
-        sourceIndex++) {
+    for (var sourceIndex = first; sourceIndex <= last; sourceIndex++) {
       /*
        * Divide the distance by filterScale when downsampling.
        * Multiplying the weight by 1/filterScale is unnecessary here,
        * because the collected weights are normalized afterward.
        */
-      final distance =
-          (sourceCentre - sourceIndex) / filterScale;
+      final distance = (sourceCentre - sourceIndex) / filterScale;
 
       final weight = math.max(0.0, 1.0 - distance.abs());
 
@@ -276,11 +266,9 @@ List<_Contributions> _makeContributions({
        * If several outside samples clamp to the same edge pixel,
        * combine their weights.
        */
-      final clampedIndex =
-          sourceIndex.clamp(0, sourceSize - 1).toInt();
+      final clampedIndex = sourceIndex.clamp(0, sourceSize - 1).toInt();
 
-      combined[clampedIndex] =
-          (combined[clampedIndex] ?? 0.0) + weight;
+      combined[clampedIndex] = (combined[clampedIndex] ?? 0.0) + weight;
     }
 
     final weightSum = combined.values.fold<double>(
@@ -290,8 +278,7 @@ List<_Contributions> _makeContributions({
 
     if (weightSum == 0.0) {
       // Defensive fallback. This should not normally occur.
-      final nearest =
-          sourceCentre.round().clamp(0, sourceSize - 1).toInt();
+      final nearest = sourceCentre.round().clamp(0, sourceSize - 1).toInt();
 
       result.add(_Contributions([nearest], [1.0]));
       continue;
@@ -320,7 +307,6 @@ int _toUint8(double value) {
   return value.round();
 }
 
-
 /// ONNX wrapper for the Aotearoa species classifier.
 ///
 /// The model expects:
@@ -341,8 +327,8 @@ class OnnxSpeciesModel {
     this.height = 384,
     this.mean = const <double>[0.5, 0.5, 0.5],
     this.std = const <double>[0.5, 0.5, 0.5],
-  })  : assert(mean.length == 3),
-        assert(std.length == 3);
+  }) : assert(mean.length == 3),
+       assert(std.length == 3);
 
   final String assetPath;
   final int width;
@@ -399,16 +385,16 @@ class OnnxSpeciesModel {
     Map<String, OrtValue>? outputTensors;
 
     try {
-      inputTensor = await OrtValue.fromList(
-        inputData,
-        <int>[1, 3, height, width],
-      );
+      inputTensor = await OrtValue.fromList(inputData, <int>[
+        1,
+        3,
+        height,
+        width,
+      ]);
 
-      outputTensors = await session.run(
-        <String, OrtValue>{
-          _inputName!: inputTensor,
-        },
-      );
+      outputTensors = await session.run(<String, OrtValue>{
+        _inputName!: inputTensor,
+      });
 
       final outputTensor = outputTensors[_outputName];
 
@@ -448,14 +434,17 @@ class OnnxSpeciesModel {
     img.Image? decodedImage = img.decodeImage(encodedBytes);
 
     if (decodedImage == null) {
-      throw FormatException(
-        'Unable to decode image: ${imageFile.path}',
-      );
+      throw FormatException('Unable to decode image: ${imageFile.path}');
     }
 
     // Correct photographs according to their EXIF orientation.
     decodedImage = img.bakeOrientation(decodedImage);
-    final img.Image croppedImage = resizeAndCenterCropTorchvisionStyle(decodedImage, resizeSize: 416, cropWidth: 384, cropHeight: 384);
+    final img.Image croppedImage = resizeAndCenterCropTorchvisionStyle(
+      decodedImage,
+      resizeSize: 416,
+      cropWidth: width,
+      cropHeight: height,
+    );
 
     final int planeSize = width * height;
     final Float32List input = Float32List(3 * planeSize);

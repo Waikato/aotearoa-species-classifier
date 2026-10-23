@@ -14,11 +14,5 @@ class Prediction {
   @HiveField(3)
   final NameData nameData;
 
-  const Prediction (
-      this.index,
-      this.species,
-      this.probability,
-      this.nameData,
-      );
+  const Prediction(this.index, this.species, this.probability, this.nameData);
 }
-

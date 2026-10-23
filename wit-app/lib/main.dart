@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -6,7 +5,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:camera/camera.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -17,12 +15,6 @@ import 'package:wit_app/classes/prediction.dart';
 
 import 'package:flutter/foundation.dart'; // for debugPrint
 
-import 'package:shared_preferences_android/shared_preferences_android.dart';
-import 'package:shared_preferences_ios/shared_preferences_ios.dart';
-
-import 'package:path_provider_android/path_provider_android.dart';
-import 'package:path_provider_ios/path_provider_ios.dart';
-
 import 'globals.dart';
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
@@ -31,12 +23,8 @@ import 'screens/classification_history.dart';
 import 'screens/classification.dart';
 import 'screens/model_manager.dart';
 
-void main() async {
-  if (Platform.isAndroid) SharedPreferencesAndroid.registerWith();
-  if (Platform.isIOS) SharedPreferencesIOS.registerWith();
-
-  if (Platform.isAndroid) PathProviderAndroid.registerWith();
-  if (Platform.isIOS) PathProviderIOS.registerWith();
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize hive database and prepare it
   await Hive.initFlutter();
@@ -85,21 +73,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
-  List<double> mean = [0.5, 0.5, 0.5]; //[0.485, 0.456, 0.406];
-  List<double> std = [0.5, 0.5, 0.5]; //[0.229, 0.224, 0.225]; //
+  bool _isInitialising = true;
+  String? _initialisationError;
 
-  //File? image;// = File("assets/logos/TAIAO.png");
   OnnxSpeciesModel? imageModel;
-  //PostProcessingModel? imageModel;
-  String? imagePrediction;
   late final Box box;
   late final Box speciesNamesBox;
-  //late final Map<String, dynamic> speciesNamesMap;
-
-  Future<List<String>> _getLabels(String labelPath) async {
-    String labelsData = await rootBundle.loadString(labelPath);
-    return labelsData.split(",");
-  }
 
   int _comparePredictions(Prediction a, Prediction b) {
     // comparator function allows sorting of Prediction class instances
@@ -112,56 +91,48 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  List<double> applyTemperatureScaling(
-    List<double> prediction,
-  ) {
+  List<double> applyTemperatureScaling(List<double> prediction) {
     return prediction
-        .map(
-          (double value) => value * LOGIT_CALIBRATION_SCALE,
-        )
+        .map((double value) => value * LOGIT_CALIBRATION_SCALE)
         .toList();
   }
 
-List<double> applySoftmax(List<double> prediction) {
-  final double maxValue =
-      prediction.reduce((a, b) => a > b ? a : b);
+  List<double> applySoftmax(List<double> prediction) {
+    final double maxValue = prediction.reduce((a, b) => a > b ? a : b);
 
-  double exponentSum = 0.0;
+    double exponentSum = 0.0;
 
-  for (final value in prediction) {
-    exponentSum += exp(value - maxValue);
+    for (final value in prediction) {
+      exponentSum += exp(value - maxValue);
+    }
+
+    return prediction
+        .map((value) => exp(value - maxValue) / exponentSum)
+        .toList();
   }
-
-  return prediction
-      .map(
-        (value) => exp(value - maxValue) / exponentSum,
-      )
-      .toList();
-}
-
 
   NameData _getNameData(int ID) {
     String stringID = ID.toString();
     NameData idNameData = NameData(
-        ID,
-        speciesNamesMap[stringID]["scientific_name"],
-        List<String>.from(speciesNamesMap[stringID]["mri"]["common_names"]),
-        List<String>.from(speciesNamesMap[stringID]["eng"]["common_names"]));
+      ID,
+      speciesNamesMap[stringID]["scientific_name"],
+      List<String>.from(speciesNamesMap[stringID]["mri"]["common_names"]),
+      List<String>.from(speciesNamesMap[stringID]["eng"]["common_names"]),
+    );
     return idNameData;
   }
 
-  Future<List<Prediction>> _getTopFivePredictions(
-    List<double> prediction,
-  ) async {
+  List<Prediction> _getTopFivePredictions(List<double> prediction) {
     List<Prediction> predictions = prediction.asMap().entries.map((entry) {
       int i = entry.key;
       NameData nameData = speciesNamesBox.get(i);
       //Prediction pred = Prediction(i, labels[i], entry.value, nameData);
       Prediction pred = Prediction(
-          i,
-          speciesNamesMap[i.toString()]["scientific_name"],
-          entry.value,
-          nameData);
+        i,
+        speciesNamesMap[i.toString()]["scientific_name"],
+        entry.value,
+        nameData,
+      );
       return pred;
     }).toList();
 
@@ -171,29 +142,19 @@ List<double> applySoftmax(List<double> prediction) {
     return predictions.sublist(0, 5);
   }
 
-  Future loadNamesData() async {
-    /*if (speciesNamesBox.values.length != 11047) {
-      debugPrint("Updating speciesNamesBox because it currently contains ${speciesNamesBox.values.length} items instead of 11047");
-      String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
-      speciesNamesMap = jsonDecode(namesDataString);
+  Future<void> loadNamesData() async {
+    //debugPrint("Loading species data");
+    String namesDataString = await rootBundle.loadString(
+      "assets/labels/species_14991_metadata.json",
+    );
 
-      for (int i = 0; i < 11047; i++) {
-        speciesNamesBox.put(i, _getNameData(i));
-      }
-    } else {
-      debugPrint("Loading data string");
-      String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
-      speciesNamesMap = jsonDecode(namesDataString);
-    }*/
-    // instead of above approach, always reload names data every time
-    debugPrint("Loading species data");
-    String namesDataString = await rootBundle
-        .loadString("assets/labels/species_14991_metadata.json");
     speciesNamesMap = jsonDecode(namesDataString);
 
-    for (int i = 0; i < numClasses; i++) {
-      speciesNamesBox.put(i, _getNameData(i));
-    }
+    final Map<int, NameData> nameData = {
+      for (int i = 0; i < numClasses; i++) i: _getNameData(i),
+    };
+
+    await speciesNamesBox.putAll(nameData);
   }
 
   Future<void> loadModel() async {
@@ -207,26 +168,27 @@ List<double> applySoftmax(List<double> prediction) {
 
     await imageModel!.load();
 
-    debugPrint("ONNX model loaded");
+    //debugPrint("ONNX model loaded");
   }
 
-  Future _pickImage(BuildContext context, ImageSource source) async {
+  Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? predImage = await ImagePicker()
-          .pickImage(source: source); //, maxHeight: 768, maxWidth: 768);
+      final XFile? predImage = await ImagePicker().pickImage(
+        source: source,
+      ); //, maxHeight: 768, maxWidth: 768);
       if (predImage == null) return;
 
       // store image locally
       Directory dir = await getApplicationDocumentsDirectory();
-      //final String dirPath = dir.path;
-      final String dirPath = dir.path +
-          "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
-      debugPrint(dirPath);
+      //final String dirPath = dir.path +
+      //    "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
+      final String dirPath = path.join(dir.path, 'files', version);
       final Directory targetDir = Directory(dirPath);
       final String filename =
-          "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
+          "${DateFormat('yyyyMMddkkmmss_SSS').format(DateTime.now())}.png";
       // alternatively to checking if image was picked from gallery above, save a copy of the image always
-      String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+      //String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+      final String savePath = path.join(dirPath, filename);
 
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
@@ -234,35 +196,65 @@ List<double> applySoftmax(List<double> prediction) {
 
       await predImage.saveTo(savePath);
 
+      if (!mounted) return;
+
       setState(() {
         _isLoading = true;
       });
 
       List<double> prediction = await imageModel!.getImagePredictionList(
-        File(predImage.path),
+        File(savePath),
       );
 
       prediction = applyTemperatureScaling(prediction);
       prediction = applySoftmax(prediction);
-      List<Prediction> topFivePredictions =
-          await _getTopFivePredictions(prediction);
-      box.add(ClassificationResult(topFivePredictions[0].species, savePath,
-          DateTime.now(), topFivePredictions));
+      List<Prediction> topFivePredictions = _getTopFivePredictions(prediction);
+      final int classificationKey = await box.add(
+        ClassificationResult(
+          topFivePredictions[0].species,
+          savePath,
+          DateTime.now(),
+          topFivePredictions,
+        ),
+      );
 
-      //setState(() => this.image = File(predImage.path));  // unecessary?
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });
 
-      int boxIndex = box.values.length - 1;
       Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => Classification(
-                    classificationID: boxIndex,
-                  )));
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              Classification(classificationKey: classificationKey),
+        ),
+      );
     } on PlatformException catch (e) {
-      debugPrint('Failed in picking image: $e');
+      debugPrint('Platform operation failed: $e');
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The image could not be processed.')),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Classification failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The image could not be classified.')),
+        );
+      }
     }
   }
 
@@ -270,27 +262,19 @@ List<double> applySoftmax(List<double> prediction) {
     required String title,
     required IconData icon,
     required VoidCallback onClicked,
-  }) =>
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
-            backgroundColor: Colors.amber,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 20),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28.0))),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 28,
-            ),
-            const SizedBox(width: 16),
-            Text(title),
-          ],
-        ),
-        onPressed: onClicked,
-      );
+  }) => ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      minimumSize: const Size.fromHeight(56),
+      backgroundColor: Colors.amber,
+      foregroundColor: Colors.white,
+      textStyle: const TextStyle(fontSize: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0)),
+    ),
+    child: Row(
+      children: [Icon(icon, size: 28), const SizedBox(width: 16), Text(title)],
+    ),
+    onPressed: onClicked,
+  );
 
   @override
   void initState() {
@@ -298,24 +282,45 @@ List<double> applySoftmax(List<double> prediction) {
     super.initState();
     box = Hive.box('resultsBox');
     speciesNamesBox = Hive.box('namesBox');
-    loadNamesData();
-    loadModel();
+    _initialise();
   }
 
-  @override
-  void dispose() {
-    // close the hive box properly when closing the app
-    Hive.close();
-    super.dispose();
+  Future<void> _initialise() async {
+    try {
+      await Future.wait([loadNamesData(), loadModel()]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isInitialising = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Initialization failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isInitialising = false;
+        _initialisationError = 'The classification model could not be loaded.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _isLoading
+      body: _isInitialising || _isLoading
           ? const Center(
               child: CircularProgressIndicator(), // when an image is being
               // processed, should display the loading wheel.
+            )
+          : _initialisationError != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(_initialisationError!, textAlign: TextAlign.center),
+              ),
             )
           : Container(
               padding: const EdgeInsets.all(32),
@@ -332,18 +337,23 @@ List<double> applySoftmax(List<double> prediction) {
                         child: SizedBox(
                           //height: 64.0,
                           child: Image(
-                              image: AssetImage(
-                                  'assets/logos/2020_School of Comp and Math Sciences w Logo.png')),
+                            image: AssetImage(
+                              'assets/logos/2020_School of Comp and Math Sciences w Logo.png',
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(width: 6),
                       Expanded(
-                          child: SizedBox(
-                        //height: 64.0,
-                        child: Image(
-                            image:
-                                AssetImage('assets/logos/UCBlack_cropped.png')),
-                      )),
+                        child: SizedBox(
+                          //height: 64.0,
+                          child: Image(
+                            image: AssetImage(
+                              'assets/logos/UCBlack_cropped.png',
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -357,16 +367,19 @@ List<double> applySoftmax(List<double> prediction) {
                         child: SizedBox(
                           //height: 64.0,
                           child: Image(
-                              image: AssetImage('assets/logos/TAIAO.png')),
+                            image: AssetImage('assets/logos/TAIAO.png'),
+                          ),
                         ),
                       ),
                       SizedBox(width: 6),
                       Expanded(
-                          child: SizedBox(
-                        //height: 64.0,
-                        child: Image(
-                            image: AssetImage('assets/logos/AI_institute.png')),
-                      )),
+                        child: SizedBox(
+                          //height: 64.0,
+                          child: Image(
+                            image: AssetImage('assets/logos/AI_institute.png'),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -377,8 +390,10 @@ List<double> applySoftmax(List<double> prediction) {
                       Expanded(
                         child: SizedBox(
                           child: Image(
-                              image: AssetImage(
-                                  'assets/logos/iNaturalist_NZ_with_kahukura_cropped.png')),
+                            image: AssetImage(
+                              'assets/logos/iNaturalist_NZ_with_kahukura_cropped.png',
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -397,36 +412,42 @@ List<double> applySoftmax(List<double> prediction) {
             ),*/
             const SizedBox(height: 12),*/
                   _buildButton(
-                      title: 'Pick Camera',
-                      icon: Icons.camera_alt_outlined,
-                      onClicked: () => _pickImage(context, ImageSource.camera)),
+                    title: 'Pick Camera',
+                    icon: Icons.camera_alt_outlined,
+                    onClicked: () => _pickImage(ImageSource.camera),
+                  ),
                   const SizedBox(height: 12),
                   _buildButton(
-                      title: 'Pick Gallery',
-                      icon: Icons.image_outlined,
-                      onClicked: () =>
-                          _pickImage(context, ImageSource.gallery)),
+                    title: 'Pick Gallery',
+                    icon: Icons.image_outlined,
+                    onClicked: () => _pickImage(ImageSource.gallery),
+                  ),
                   const SizedBox(height: 12),
                   _buildButton(
-                      title: 'Classification History',
-                      icon: Icons.history_outlined,
-                      onClicked: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const ClassificationHistory()));
-                      }),
+                    title: 'Classification History',
+                    icon: Icons.history_outlined,
+                    onClicked: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ClassificationHistory(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 12),
                   _buildButton(
-                      title: 'Model Manager',
-                      icon: Icons.manage_search_outlined,
-                      onClicked: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const ModelManager()));
-                      }),
+                    title: 'Model Manager',
+                    icon: Icons.manage_search_outlined,
+                    onClicked: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ModelManager(),
+                        ),
+                      );
+                    },
+                  ),
                   const Spacer(),
                 ],
               ),

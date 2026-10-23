@@ -1,5 +1,5 @@
 name: wit_app
-description: A new Flutter project.
+description: The Flutter project for the Aotearoa Species Classifier.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -15,10 +15,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.0+13
+version: 1.2.2+15
 
 environment:
-  sdk: ">=2.15.1 <3.0.0"
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -29,33 +29,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences_android:
-  shared_preferences_ios:
-  path_provider_android:
-  path_provider_ios:
-
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: #^1.0.2
-  image_picker: ^1.0.4 #^0.8.4+5
-  camera: ^0.11.1 #^0.9.4+10
+  cupertino_icons: ^2.0.0
+  image_picker: ^1.2.4
+  camera: ^0.11.4
   path_provider:
   path:
   intl:
-  json_serializable:
   hive:
   hive_flutter:
-  hive_generator: # for TypeAdapter
-  build_runner: # for TypeAdapter
-  flutter_onnxruntime: ^1.8.3
-  image: 4.9.1
+  flutter_onnxruntime: ^1.9.0
+  image: ^4.9.1
   flutter_launcher_icons: #^0.9.3
   url_launcher:
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

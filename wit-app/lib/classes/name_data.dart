@@ -13,10 +13,5 @@ class NameData {
   @HiveField(3)
   final List<String> engNames;
 
-  const NameData (
-      this.index,
-      this.name,
-      this.mriNames,
-      this.engNames,
-      );
+  const NameData(this.index, this.name, this.mriNames, this.engNames);
 }

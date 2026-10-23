@@ -22,6 +22,6 @@ class ClassificationResult {
     this.prediction,
     this.imagePath,
     this.timestamp,
-      this.topFivePredictions,
+    this.topFivePredictions,
   );
 }
