@@ -1,45 +1,28 @@
 PODS:
   - Flutter (1.0.0)
-  - image_picker (0.0.1):
+  - path_provider_ios (0.0.1):
     - Flutter
-  - LibTorch (1.8.0):
-    - LibTorch/Core (= 1.8.0)
-  - LibTorch/Core (1.8.0):
-    - LibTorch/Torch
-  - LibTorch/Torch (1.8.0)
-  - path_provider (0.0.1):
+  - shared_preferences_ios (0.0.1):
     - Flutter
-  - pytorch_mobile (0.0.1):
-    - Flutter
-    - LibTorch (~> 1.8.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
-  - image_picker (from `.symlinks/plugins/image_picker/ios`)
-  - path_provider (from `.symlinks/plugins/path_provider/ios`)
-  - pytorch_mobile (from `.symlinks/plugins/pytorch_mobile/ios`)
-
-SPEC REPOS:
-  trunk:
-    - LibTorch
+  - path_provider_ios (from `.symlinks/plugins/path_provider_ios/ios`)
+  - shared_preferences_ios (from `.symlinks/plugins/shared_preferences_ios/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
-  image_picker:
-    :path: ".symlinks/plugins/image_picker/ios"
-  path_provider:
-    :path: ".symlinks/plugins/path_provider/ios"
-  pytorch_mobile:
-    :path: ".symlinks/plugins/pytorch_mobile/ios"
+  path_provider_ios:
+    :path: ".symlinks/plugins/path_provider_ios/ios"
+  shared_preferences_ios:
+    :path: ".symlinks/plugins/shared_preferences_ios/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
-  image_picker: 50e7c7ff960e5f58faa4d1f4af84a771c671bc4a
-  LibTorch: d7724112589515bedd5eadf14a9db5b1d62d8a34
-  path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
-  pytorch_mobile: cdb1566b9883c59662d443e904db6674e829dd84
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  path_provider_ios: 14f3d2fd28c4fdb42f44e0f751d12861c43cee02
+  shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
 
-PODFILE CHECKSUM: d9646c0250b6c86682c69a86e40f54c636c64ae4
+PODFILE CHECKSUM: b88e7a98f2937562929b7fb39f706860dd207de9
 
-COCOAPODS: 1.10.1
+COCOAPODS: 1.17.0
