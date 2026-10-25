@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:isolate';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
@@ -307,6 +307,70 @@ int _toUint8(double value) {
   return value.round();
 }
 
+class _ImagePreprocessingRequest {
+  const _ImagePreprocessingRequest({
+    required this.encodedBytes,
+    required this.imagePath,
+    required this.width,
+    required this.height,
+    required this.mean,
+    required this.std,
+  });
+
+  final Uint8List encodedBytes;
+  final String imagePath;
+  final int width;
+  final int height;
+  final List<double> mean;
+  final List<double> std;
+}
+
+Float32List _preprocessImage(_ImagePreprocessingRequest request) {
+  img.Image? decodedImage = img.decodeImage(request.encodedBytes);
+
+  if (decodedImage == null) {
+    throw FormatException('Unable to decode image: ${request.imagePath}');
+  }
+
+  // Correct photographs according to their EXIF orientation.
+  decodedImage = img.bakeOrientation(decodedImage);
+
+  final img.Image croppedImage = resizeAndCenterCropTorchvisionStyle(
+    decodedImage,
+    resizeSize: 416,
+    cropWidth: request.width,
+    cropHeight: request.height,
+  );
+
+  final int planeSize = request.width * request.height;
+  final Float32List input = Float32List(3 * planeSize);
+
+  for (int y = 0; y < request.height; y++) {
+    for (int x = 0; x < request.width; x++) {
+      final pixel = croppedImage.getPixel(x, y);
+      final int pixelIndex = y * request.width + x;
+
+      // Match ToTensor(): convert channel values from [0, 255]
+      // to floating-point values in [0, 1].
+      final double red = pixel.r.toDouble() / 255.0;
+      final double green = pixel.g.toDouble() / 255.0;
+      final double blue = pixel.b.toDouble() / 255.0;
+
+      // Match Normalize(mean=0.5, std=0.5) and create NCHW
+      // layout: all red values, then green, then blue.
+      input[pixelIndex] = (red - request.mean[0]) / request.std[0];
+
+      input[planeSize + pixelIndex] =
+          (green - request.mean[1]) / request.std[1];
+
+      input[(2 * planeSize) + pixelIndex] =
+          (blue - request.mean[2]) / request.std[2];
+    }
+  }
+
+  return input;
+}
+
 /// ONNX wrapper for the Aotearoa species classifier.
 ///
 /// The model expects:
@@ -431,45 +495,16 @@ class OnnxSpeciesModel {
   Future<Float32List> _prepareImage(File imageFile) async {
     final encodedBytes = await imageFile.readAsBytes();
 
-    img.Image? decodedImage = img.decodeImage(encodedBytes);
-
-    if (decodedImage == null) {
-      throw FormatException('Unable to decode image: ${imageFile.path}');
-    }
-
-    // Correct photographs according to their EXIF orientation.
-    decodedImage = img.bakeOrientation(decodedImage);
-    final img.Image croppedImage = resizeAndCenterCropTorchvisionStyle(
-      decodedImage,
-      resizeSize: 416,
-      cropWidth: width,
-      cropHeight: height,
+    final request = _ImagePreprocessingRequest(
+      encodedBytes: encodedBytes,
+      imagePath: imageFile.path,
+      width: width,
+      height: height,
+      mean: List<double>.of(mean),
+      std: List<double>.of(std),
     );
 
-    final int planeSize = width * height;
-    final Float32List input = Float32List(3 * planeSize);
-
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        final pixel = croppedImage.getPixel(x, y);
-        final int pixelIndex = y * width + x;
-
-        // Match ToTensor(): convert channel values from [0, 255]
-        // to floating-point values in [0, 1].
-        final double red = pixel.r.toDouble() / 255.0;
-        final double green = pixel.g.toDouble() / 255.0;
-        final double blue = pixel.b.toDouble() / 255.0;
-
-        // Match Normalize(mean=0.5, std=0.5) and create NCHW
-        // layout: all red values, then green, then blue.
-        input[pixelIndex] = (red - mean[0]) / std[0];
-        input[planeSize + pixelIndex] = (green - mean[1]) / std[1];
-
-        input[(2 * planeSize) + pixelIndex] = (blue - mean[2]) / std[2];
-      }
-    }
-
-    return input;
+    return Isolate.run(() => _preprocessImage(request));
   }
 
   /// The ONNX output may be returned either as:
