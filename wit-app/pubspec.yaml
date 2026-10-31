@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.3+16
+version: 1.2.4+17
 
 environment:
   sdk: ^3.13.0
@@ -31,16 +31,15 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^2.0.0
   image_picker: ^1.2.4
-  camera: ^0.11.4
-  path_provider:
-  path:
-  intl:
-  hive:
-  hive_flutter:
+  camera: ^0.12.2
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  intl: ^0.20.3
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   flutter_onnxruntime: ^1.9.0
-  image: ^4.9.1
-  flutter_launcher_icons: #^0.9.3
-  url_launcher:
+  image: ^4.12.0
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -53,12 +52,14 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
-flutter_icons:
+flutter_launcher_icons:
   image_path: "assets/logos/TAIAO_crop_nontransparent.png"
   android: true
   ios: true
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
