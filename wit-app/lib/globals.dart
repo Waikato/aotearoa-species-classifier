@@ -1,6 +1,6 @@
 late final Map<String, dynamic> speciesNamesMap;
 
-const int numClasses = 14991;
+const int numClasses = 19340;
 
 const String version = "1.1.0";
 

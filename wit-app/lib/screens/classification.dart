@@ -124,8 +124,8 @@ class _Classification extends State<Classification> {
     List<String> engNames,
     List<String> mriNames,
   ) {
-    if (engNames.isEmpty && mriNames.isEmpty ||
-        (engNames[0] == "" && mriNames[0] == "")) {
+    if ((engNames.isEmpty || engNames.first.trim().isEmpty) &&
+        (mriNames.isEmpty || mriNames.first.trim().isEmpty)) {
       return latinName;
     }
     String topEngName = engNames.isEmpty ? "" : engNames[0];

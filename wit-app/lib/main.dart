@@ -143,9 +143,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> loadNamesData() async {
-    //debugPrint("Loading species data");
+    debugPrint("Loading species data");
     String namesDataString = await rootBundle.loadString(
-      "assets/labels/species_14991_metadata.json",
+      "assets/labels/species_19340_metadata.json",
     );
 
     speciesNamesMap = jsonDecode(namesDataString);
@@ -155,11 +155,13 @@ class _MyHomePageState extends State<MyHomePage> {
     };
 
     await speciesNamesBox.putAll(nameData);
+
+    debugPrint("Species data loaded");
   }
 
   Future<void> loadModel() async {
     imageModel = OnnxSpeciesModel(
-      assetPath: 'assets/models/species_classifier_fp32_384_384.onnx',
+      assetPath: 'assets/models/species_classifier_fp32_384_384_Nov_2026.onnx',
       width: 384,
       height: 384,
       mean: const <double>[0.5, 0.5, 0.5],
@@ -168,7 +170,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     await imageModel!.load();
 
-    //debugPrint("ONNX model loaded");
+    debugPrint("ONNX model loaded");
   }
 
   Future<void> _pickImage(ImageSource source) async {

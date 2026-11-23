@@ -433,7 +433,7 @@ class OnnxSpeciesModel {
 
   /// Runs image classification and returns the raw model logits.
   ///
-  /// The returned list has one score for each of the 14,991 classes.
+  /// The returned list has one score for each of the 19,340 classes.
   Future<List<double>> getImagePredictionList(File imageFile) async {
     final session = _session;
 
@@ -472,9 +472,9 @@ class OnnxSpeciesModel {
       final dynamic outputData = await outputTensor.asList();
       final scores = _flattenNumericOutput(outputData);
 
-      if (scores.length != 14991) {
+      if (scores.length != 19340) {
         throw StateError(
-          'Expected 14,991 model scores, but received ${scores.length}.',
+          'Expected 19,340 model scores, but received ${scores.length}.',
         );
       }
 
