@@ -20,7 +20,7 @@ class _ModelManager extends State<ModelManager> {
             ListTile(
               leading: Icon(Icons.lightbulb_outline),
               title: Text("EfficientNetV2_small"),
-              subtitle: Text("137.1 MB : 00:00s"),
+              subtitle: Text("179.7 MB : 00:00s"),
             ),
           ],
         ),
